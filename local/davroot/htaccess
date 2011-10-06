@@ -1,0 +1,13 @@
+# Options +FollowSymLinks
+
+DirectoryIndex davroot.php
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    RewriteBase /path/to/moodle
+    
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ davroot.php [L]
+</IfModule>
