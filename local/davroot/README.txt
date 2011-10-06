@@ -18,7 +18,7 @@ After you have installed this local plugin , you'll need to configure it under
 Site administration -> Plugins -> Local plugins -> DAVRoot in the 'Settings' block.
 
 SECURITY
-Requires the s'local/davroot:canconnect' capability at system context level.
+Requires the 'local/davroot:canconnect' capability at system context level.
 
 PERFORMANCES
 WebDAV browsing is limited by, mostly, the amount of queries required
