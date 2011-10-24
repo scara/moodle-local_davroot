@@ -45,7 +45,7 @@ class DAVRootPoolDirectory extends DAVRootPoolNode implements Sabre_DAV_ICollect
      */
     public function createFile($name, $data = null)
     {
-        global $DB, $user;
+        global $DB, $USER;
 
         if ($type = get_resource_type($data)) {
             try {
@@ -70,7 +70,7 @@ class DAVRootPoolDirectory extends DAVRootPoolNode implements Sabre_DAV_ICollect
                     $newFileRecord->filepath,
                     $newFileRecord->filename)
                 ) {
-                    $newFileRecord->userid = $user->id;
+                    $newFileRecord->userid = $USER->id;
                     // source, author, license inherited from Directory? No, I suppose
                     $transaction = $DB->start_delegated_transaction();
                     try {
@@ -109,7 +109,7 @@ class DAVRootPoolDirectory extends DAVRootPoolNode implements Sabre_DAV_ICollect
      */
     public function createDirectory($name)
     {
-        global $DB, $user;
+        global $DB, $USER;
 
         $transaction = $DB->start_delegated_transaction();
         try {
@@ -119,7 +119,7 @@ class DAVRootPoolDirectory extends DAVRootPoolNode implements Sabre_DAV_ICollect
                 $this->storedFile->get_filearea(),
                 $this->storedFile->get_itemid(),
                 $this->storedFile->get_filepath() . "/$name/",
-                $user->id
+                $USER->id
             );
             // Invalidate the current children list
             $this->children = null;

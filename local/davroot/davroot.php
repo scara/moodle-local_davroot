@@ -78,16 +78,21 @@ if (!$result) {
 
     // Remove the Windows Domain, if any
     $username = array_pop(explode('\\', $username));
-    // Try to authenticate against Moodle
-    if (!$user = authenticate_user_login($username, $password)) {
-        // Authentication required
-        $auth->requireLogin();
-        die("Authentication required\n");
+
+    // Note: skip Moodle authentication if already logged in
+    $alreadyLoggedIn = (isloggedin() && ($USER->username === $username));
+    if (!$alreadyLoggedIn) {
+        // Try to authenticate against Moodle
+        if (!$user = authenticate_user_login($username, $password)) {
+            // Authentication required
+            $auth->requireLogin();
+            die("Authentication required\n");
+        }
+
+        // Create a valid Moodle Session, $USER included
+        complete_user_login($user, false);
     }
 }
-
-// Create a valid Moodle Session, $USER included
-complete_user_login($user, false);
 
 // Can the user connect to the WebDAV server?
 if (has_capability('local/davroot:canconnect', get_context_instance(CONTEXT_SYSTEM))) {

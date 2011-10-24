@@ -36,7 +36,7 @@ class DAVRootPoolFile extends DAVRootPoolNode implements Sabre_DAV_IFile
      */
     public function put($data)
     {
-        global $DB, $user;
+        global $DB, $USER;
 
         if ($type = get_resource_type($data)) {
             // Get the contents
@@ -56,7 +56,7 @@ class DAVRootPoolFile extends DAVRootPoolNode implements Sabre_DAV_IFile
                 $newFileRecord->itemid    = $this->storedFile->get_itemid();
                 $newFileRecord->filepath  = $this->storedFile->get_filepath();
                 $newFileRecord->filename  = $this->storedFile->get_filename();
-                $newFileRecord->userid    = $user->id;
+                $newFileRecord->userid    = $USER->id;
                 $newFileRecord->sortorder = $this->storedFile->get_sortorder();
                 // source, author, license inherited from the old file? Yes, I suppose
                 $source                   = $this->storedFile->get_source();
