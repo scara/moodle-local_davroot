@@ -70,20 +70,20 @@ class Sabre_VObject_Element_DateTime extends Sabre_VObject_Property {
                 $this->setValue($dt->format('Ymd\\THis'));
                 $this->offsetUnset('VALUE');
                 $this->offsetUnset('TZID');
-                $this->offsetSet('VALUE','DATETIME'); 
+                $this->offsetSet('VALUE','DATE-TIME'); 
                 break;
             case self::UTC :
                 $dt->setTimeZone(new DateTimeZone('UTC'));
                 $this->setValue($dt->format('Ymd\\THis\\Z'));
                 $this->offsetUnset('VALUE');
                 $this->offsetUnset('TZID');
-                $this->offsetSet('VALUE','DATETIME');
+                $this->offsetSet('VALUE','DATE-TIME');
                 break;
             case self::LOCALTZ :
                 $this->setValue($dt->format('Ymd\\THis'));
                 $this->offsetUnset('VALUE');
                 $this->offsetUnset('TZID');
-                $this->offsetSet('VALUE','DATETIME');
+                $this->offsetSet('VALUE','DATE-TIME');
                 $this->offsetSet('TZID', $dt->getTimeZone()->getName());
                 break; 
             case self::DATE :
@@ -116,7 +116,7 @@ class Sabre_VObject_Element_DateTime extends Sabre_VObject_Property {
         list(
             $this->dateType,
             $this->dateTime
-        ) = self::parseData($this->value, $this->offsetGet('TZID'));
+        ) = self::parseData($this->value, $this);
         return $this->dateTime;
 
     }
@@ -137,7 +137,7 @@ class Sabre_VObject_Element_DateTime extends Sabre_VObject_Property {
         list(
             $this->dateType,
             $this->dateTime,
-        ) = self::parseData($this->value, $this->offsetGet('TZID'));
+        ) = self::parseData($this->value, $this);
         return $this->dateType;
 
     }
@@ -151,12 +151,12 @@ class Sabre_VObject_Element_DateTime extends Sabre_VObject_Property {
      *   2. A DateTime object (or null)
      *
      * @param string|null $propertyValue The string to parse (yymmdd or 
-     *    ymmddThhmmss, etc..)
-     * @param string|null $tzid The value of the 'TZID' property.
+     *                                   ymmddThhmmss, etc..)
+     * @param Sabre_VObject_Property|null $property The instance of the 
+     *                                              property we're parsing. 
      * @return array 
      */
-    static public function parseData($propertyValue, $tzid) {
-        
+    static public function parseData($propertyValue, Sabre_VObject_Property $property = null) {
 
         if (is_null($propertyValue)) {
             return array(null, null);
@@ -195,6 +195,8 @@ class Sabre_VObject_Element_DateTime extends Sabre_VObject_Property {
             );
         }
 
+        // Finding the timezone.
+        $tzid = $property['TZID'];
         if (!$tzid) {
             return array(
                 self::LOCAL,
@@ -202,7 +204,32 @@ class Sabre_VObject_Element_DateTime extends Sabre_VObject_Property {
             );
         }
 
-        $tz = new DateTimeZone($tzid->value);
+        try {
+            $tz = new DateTimeZone($tzid->value);
+        } catch (Exception $e) {
+
+            // The id was invalid, we're going to try to find the information 
+            // through the VTIMEZONE object.
+
+            // First we find the root object
+            $root = $property;
+            while($root->parent) {
+                $root = $root->parent;
+            }
+
+            if (isset($root->VTIMEZONE)) {
+                foreach($root->VTIMEZONE as $vtimezone) {
+                    if (((string)$vtimezone->TZID) == $tzid) {
+                        if (isset($vtimezone->{'X-LIC-LOCATION'})) {
+                            $tzid = (string)$vtimezone->{'X-LIC-LOCATION'};
+                        }
+                    }
+                }
+            }
+
+            $tz = new DateTimeZone($tzid);
+            
+        }
         $dt = new DateTime($dateStr, $tz);
         $dt->setTimeZone($tz);
 
