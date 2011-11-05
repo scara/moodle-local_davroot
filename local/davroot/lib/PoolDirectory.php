@@ -58,6 +58,7 @@ class DAVRootPoolDirectory extends DAVRootPoolNode implements Sabre_DAV_ICollect
                 $newFileRecord->contextid = $this->storedFile->get_contextid();
                 $newFileRecord->component = $this->storedFile->get_component();
                 $newFileRecord->filearea  = $this->storedFile->get_filearea();
+                // Get the item id from the parent folder
                 $newFileRecord->itemid    = $this->storedFile->get_itemid();
                 $newFileRecord->filepath  = $this->storedFile->get_filepath();
                 $newFileRecord->filename  = $name;
@@ -117,6 +118,7 @@ class DAVRootPoolDirectory extends DAVRootPoolNode implements Sabre_DAV_ICollect
                 $this->storedFile->get_contextid(),
                 $this->storedFile->get_component(),
                 $this->storedFile->get_filearea(),
+                // Get the item id from the parent folder
                 $this->storedFile->get_itemid(),
                 $this->storedFile->get_filepath() . "/$name/",
                 $USER->id
@@ -165,7 +167,8 @@ class DAVRootPoolDirectory extends DAVRootPoolNode implements Sabre_DAV_ICollect
                 $this->storedFile->get_contextid(),
                 $this->storedFile->get_component(),
                 $this->storedFile->get_filearea(),
-                $this->itemId,
+                // Get the item id from the parent folder
+                $this->storedFile->get_itemid(),
                 $this->storedFile->get_filepath(),
                 false,                         // recursive
                 true,                         // includedirs

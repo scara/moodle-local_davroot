@@ -26,7 +26,7 @@
 
 defined('MOODLE_INTERNAL') || die;
 
-$plugin->version   = 2011060600;      // If version == 0 then module will not be installed
+$plugin->version   = 2011110500;      // If version == 0 then module will not be installed
 $plugin->requires  = 2010080300;      // Requires this Moodle version
 $plugin->cron      = 0;               // Period for cron to check this module (secs)
 $plugin->component = 'local_davroot'; // To check on upgrade, that module sits in correct place

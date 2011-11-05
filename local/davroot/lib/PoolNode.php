@@ -31,13 +31,6 @@ defined('MOODLE_INTERNAL') || die;
 abstract class DAVRootPoolNode implements Sabre_DAV_IProperties
 {
     /**
-     * Moodle file record itemid. Default value: 0
-     *
-     * @var int
-     */
-    public $itemId = 0;
-
-    /**
      * @var stored_file
      */
     public $storedFile = null;
@@ -116,16 +109,53 @@ abstract class DAVRootPoolNode implements Sabre_DAV_IProperties
      */
     public function delete()
     {
+        $children = array();
+
+        // Prevent to delete a virtual root file
+        if ($this->storedFile->is_directory() && ($this->storedFile->get_filepath() === '/')) {
+            throw new Sabre_DAV_Exception_Forbidden("You can't delete a virtual root file");
+        }
+
         // Notes:
         // 1. stored_file::delete() always returns true
         // 2. stored_file::delete() will not delete the file from the file system
         //    if there will be more than a record with the same content hash!
-        if ($this->storedFile->is_directory() && (count($this->getChildren()) > 0)) {
-            // TODO: implement recursive deletion
-            throw new Sabre_DAV_Exception_NotImplemented('Recursive deletion required');
-        } else {
-            $this->storedFile->delete();
+        // 3. {module}_get_file_areas probably misses to inform about peculiar permissions:
+        //    everything is delegated in pluginfile.php through {module}_pluginfile. Maybe
+        //    Moodle Files API should be improved to decouple permissions on areas from
+        //    {module}_pluginfile
+
+        // TODO Check DAV specs to inspect any Client responsibility
+        // in collecting every Resource under Collections e.g. using Depth Header
+        // with value "infinity" in DELETE method on a Collection
+        // If every Client will use it, we could remove the foreach below
+        // since the Client is charged of the traversal and cleanup.
+        // But... for pool consistency reasons, it is better to safely assure
+        // a correct recursive deletion by ourselves w/o relying on the Client
+        // See also: Sabre_DAV_Server::getHTTPDepth()
+
+        // Get recursive children. Optimized deletion: the reason for DAVRootPoolNode::delete()
+        // instead of specialized DAVRootPoolDirectory::delete() and DAVRootPoolFile::delete()
+        if ($this->storedFile->is_directory()) {
+            $children = $this->fileStorage->get_directory_files(
+                $this->storedFile->get_contextid(),
+                $this->storedFile->get_component(),
+                $this->storedFile->get_filearea(),
+                $this->storedFile->get_itemid(),
+                $this->storedFile->get_filepath(),
+                true,                          // recursive
+                true,                         // includedirs
+                'filepath ASC, filename ASC' // sort
+            );
         }
+
+        // Perform the deletion of each child item in the pool
+        foreach ($children as $child) {
+            $child->delete();
+        }
+
+        // Delete the node in the pool
+        $this->storedFile->delete();
     }
 
     /**
@@ -155,6 +185,157 @@ abstract class DAVRootPoolNode implements Sabre_DAV_IProperties
     }
 
     /**
+     * Renames an item in the Moodle files pool
+     *
+     * IMPORTANT! Low level functionality: it should be implemented
+     * by the Moodle Files API, e.g. stored_file::rename()
+     *
+     * @throws file_exception
+     * @param stored_file $file_stored The stored_file instance to be renamed
+     * @param $new_name The new name
+     * @return stored_file The updated stored_file instance
+     */
+    protected function stored_file_rename(stored_file $file_stored, $new_name)
+    {
+        global $DB;
+
+        $new_name = clean_param($new_name, PARAM_FILE);
+        if ($new_name === '') {
+            throw new file_exception('storedfileproblem', 'Invalid node name');
+        }
+
+        // Update the contents by creating a new record in the pool
+        $updrecord = new stdClass();
+        $updrecord->id           = $file_stored->get_id();
+        $updrecord->contextid    = $file_stored->get_contextid();
+        $updrecord->component    = $file_stored->get_component();
+        $updrecord->filearea     = $file_stored->get_filearea();
+        $updrecord->itemid       = $file_stored->get_itemid();
+        if ($file_stored->is_directory()) {
+            // dirname() under Windows is not safe for Moodle Files API: '/' becomes '\' (PHP 4.3.0+)
+            $filepath = $file_stored->get_filepath();
+            $filepath = trim($filepath, '/');
+            $dirs = explode('/', $filepath);
+            array_pop($dirs);
+            $filepath = implode('/', $dirs);
+
+            $updrecord->filepath = ($filepath === '') ? "/$new_name/" : "/$filepath/$new_name/";
+            $updrecord->filename = '.';
+        } else {
+            $updrecord->filepath = $file_stored->get_filepath();
+            $updrecord->filename = $new_name;
+        }
+        $updrecord->userid       = $file_stored->get_userid();
+        $updrecord->filesize     = $file_stored->get_filesize();
+        $updrecord->mimetype     = $file_stored->get_mimetype();
+        if (!$file_stored->is_directory()) {
+            $updrecord->mimetype = mimeinfo('type', $updrecord->filename);
+        }
+        $updrecord->status       = $file_stored->get_status();
+        $updrecord->source       = $file_stored->get_source();
+        $updrecord->author       = $file_stored->get_author();
+        $updrecord->license      = $file_stored->get_license();
+        $updrecord->sortorder    = $file_stored->get_sortorder();
+        $updrecord->contenthash  = $file_stored->get_contenthash();
+        // Evaluate the new pathname hash
+        $updrecord->pathnamehash = $this->fileStorage->get_pathname_hash(
+            $updrecord->contextid,
+            $updrecord->component,
+            $updrecord->filearea,
+            $updrecord->itemid,
+            $updrecord->filepath,
+            $updrecord->filename
+        );
+        $updrecord->timecreated  = $file_stored->get_timecreated();
+        $updrecord->timemodified = $file_stored->get_timemodified();
+
+        if ($DB->record_exists('files', array('pathnamehash' => $updrecord->pathnamehash))) {
+            throw new Sabre_DAV_Exception(
+                "PoolNode::stored_file_rename() - Already exists: $updrecord->filepath$updrecord->filename");
+        }
+
+        $DB->update_record('files', $updrecord);
+
+        return $this->fileStorage->get_file_instance($updrecord);
+    }
+
+    /**
+     * Move an item in the Moodle files pool from its root path to a given one.
+     * Be careful in moving root items: they should be never moved!
+     *
+     * IMPORTANT! Low level functionality: it should be implemented
+     * by the Moodle Files API, e.g. file_storage::move_to_new_folder()
+     *
+     * @throws file_exception
+     * @param stored_file $file_stored The stored_file instance to be renamed
+     * @param string $old_root_path The old root path
+     * @param string $new_root_path The new root path
+     * @return stored_file The updated stored_file instance
+     */
+    protected function file_storage_move_to_new_root_path(
+        stored_file $file_stored,
+        $old_root_path,
+        $new_root_path
+    )
+    {
+        global $DB;
+
+        // Validate old_root_path
+        $old_root_path = clean_param($old_root_path, PARAM_PATH);
+        if (strpos($file_stored->get_filepath(), $old_root_path) !== 0) {
+            throw new file_exception('storedfileproblem', 'Found no matching for the given old root path');
+        }
+        if (strrpos($old_root_path, '/') !== strlen($old_root_path)-1) {
+            // Path must end with '/'
+            throw new file_exception('storedfileproblem', 'Invalid old root path');
+        }
+        // Validate new_root_path
+        $new_root_path = clean_param($new_root_path, PARAM_PATH);
+        if (strpos($new_root_path, '/') !== 0 or strrpos($new_root_path, '/') !== strlen($new_root_path)-1) {
+            throw new file_exception('storedfileproblem', 'Invalid new root path');
+        }
+
+        // Update the contents by creating a new record in the pool
+        $updrecord = new stdClass();
+        $updrecord->id           = $file_stored->get_id();
+        $updrecord->contextid    = $file_stored->get_contextid();
+        $updrecord->component    = $file_stored->get_component();
+        $updrecord->filearea     = $file_stored->get_filearea();
+        $updrecord->itemid       = $file_stored->get_itemid();
+        // Evaluate the new root path: str_replace() should be byte safe for our needs
+        $updrecord->filepath     = str_replace(
+            $old_root_path,
+            $new_root_path,
+            $file_stored->get_filepath()
+        );
+        $updrecord->filename     = $file_stored->get_filename();
+        $updrecord->userid       = $file_stored->get_userid();
+        $updrecord->filesize     = $file_stored->get_filesize();
+        $updrecord->mimetype     = $file_stored->get_mimetype();
+        $updrecord->status       = $file_stored->get_status();
+        $updrecord->source       = $file_stored->get_source();
+        $updrecord->author       = $file_stored->get_author();
+        $updrecord->license      = $file_stored->get_license();
+        $updrecord->sortorder    = $file_stored->get_sortorder();
+        $updrecord->contenthash  = $file_stored->get_contenthash();
+        // Evaluate the new pathname hash
+        $updrecord->pathnamehash = $this->fileStorage->get_pathname_hash(
+            $updrecord->contextid,
+            $updrecord->component,
+            $updrecord->filearea,
+            $updrecord->itemid,
+            $updrecord->filepath,
+            $updrecord->filename
+        );
+        $updrecord->timecreated  = $file_stored->get_timecreated();
+        $updrecord->timemodified = $file_stored->get_timemodified();
+
+        $DB->update_record('files', $updrecord);
+
+        return $this->fileStorage->get_file_instance($updrecord);
+    }
+
+    /**
      * Renames the node
      *
      * @param string $name The new name
@@ -163,73 +344,57 @@ abstract class DAVRootPoolNode implements Sabre_DAV_IProperties
     public function setName($name)
     {
         global $DB;
+        $children = array();
 
-        $name = clean_param($name, PARAM_FILE);
-        if ($name === '') {
-            throw new Sabre_DAV_Exception('Invalid node name');
+        if ($this->storedFile->get_filename() === $name) {
+            return;
+        }
+        // Prevent to rename a virtual root file
+        if ($this->storedFile->is_directory() && ($this->storedFile->get_filepath() === '/')) {
+            throw new Sabre_DAV_Exception_Forbidden("You can't rename a virtual root file");
         }
 
-        // File or Directory?
-        $isDir = $this->storedFile->is_directory();
-        if ($isDir && (count($this->getChildren()) > 0)) {
-            // TODO: implement recursive renaming
-            throw new Sabre_DAV_Exception_NotImplemented('Recursive renaming required');
-        } else {
-            // IMPORTANT! Low level functionality: it should be implemented
-            //            by the Moodle Files API, e.g. stored_file::rename()
-            $now = time();
-            // Update the contents by creating a new record in the pool
-            $updRecord = new stdClass();
-            $updRecord->id           = $this->storedFile->get_id();
-            $updRecord->contextid    = $this->storedFile->get_contextid();
-            $updRecord->component    = $this->storedFile->get_component();
-            $updRecord->filearea     = $this->storedFile->get_filearea();
-            $updRecord->itemid       = $this->storedFile->get_itemid();
-            if ($isDir) {
-                // dirname() under Windows is not safe for Moodle Files API: '/' becomes '\' (PHP 4.3.0+)
-                $filepath = $this->file_record->filepath;
-                $filepath = trim($filepath, '/');
-                $dirs = explode('/', $filepath);
-                array_pop($dirs);
-                $filepath = implode('/', $dirs);
-                $updRecord->filepath = ($filepath === '') ? "/$name/" : "/$filepath/$name/";
-                $updRecord->filename = '.';
-            } else {
-                $updRecord->filepath = $this->storedFile->get_filepath();
-                $updRecord->filename = $name;
-            }
-            $updRecord->timecreated  = $this->storedFile->get_timecreated();
-            $updRecord->timemodified = $now;
-            $updRecord->mimetype     = null;
-            if (!$isDir) {
-                $updRecord->mimetype = mimeinfo('type', $updRecord->filename);
-            }
-            $updRecord->userid       = $this->storedFile->get_userid();
-            $updRecord->source       = $this->storedFile->get_source();
-            $updRecord->author       = $this->storedFile->get_author();
-            $updRecord->license      = $this->storedFile->get_license();
-            $updRecord->sortorder    = $this->storedFile->get_sortorder();
-            // Evaluate the new pathname hash
-            $updRecord->pathnamehash = $this->fileStorage->get_pathname_hash(
-                $updRecord->contextid,
-                $updRecord->component,
-                $updRecord->filearea,
-                $updRecord->itemid,
-                $updRecord->filepath,
-                $updRecord->filename
-            );
+        $transaction = $DB->start_delegated_transaction();
 
-            $transaction = $DB->start_delegated_transaction();
+        $oldRootPath = $this->storedFile->get_filepath();
+        // Get recursive children. Optimized renaming: the reason for DAVRootPoolNode::setName()
+        // instead of specialized DAVRootPoolDirectory::setName() and DAVRootPoolFile::setName()
+        if ($this->storedFile->is_directory()) {
+            $children = $this->fileStorage->get_directory_files(
+            $this->storedFile->get_contextid(),
+            $this->storedFile->get_component(),
+            $this->storedFile->get_filearea(),
+            $this->storedFile->get_itemid(),
+            $this->storedFile->get_filepath(),
+            true,                          // recursive
+            true,                         // includedirs
+            'filepath ASC, filename ASC' // sort
+            );
+        }
+
+        // Rename the node in the pool
+        try {
+            $this->storedFile = $this->stored_file_rename($this->storedFile, $name);
+        } catch (Exception $e) {
+            $transaction->rollback(
+                new Sabre_DAV_Exception('PoolNode::setName() - ' . $e->getMessage())
+            );
+        }
+        $newRootPath = $this->storedFile->get_filepath();
+
+        // Perform the renaming of the root path of each child item in the pool
+        foreach ($children as $child) {
             try {
-                $DB->update_record('files', $updRecord);
+                // Move the child item under the new root
+                $this->file_storage_move_to_new_root_path($child, $oldRootPath, $newRootPath);
             } catch (Exception $e) {
                 $transaction->rollback(
-                    new Sabre_DAV_Exception('PoolNode::setName() - ' . $e->getMessage())
+                    new Sabre_DAV_Exception('PoolNode::setName() on children - ' . $e->getMessage())
                 );
             }
-            $transaction->allow_commit();
-            $this->storedFile = $this->fileStorage->get_file_instance($updRecord);
         }
+
+        $transaction->allow_commit();
     }
 
     /**

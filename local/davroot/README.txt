@@ -27,7 +27,7 @@ Microsoft Windows' WebDAV implementation and you have some shell extensions.
 There will probably be the need for improving the code too.
 
 KNOWN ISSUES
-- DAVRoot uses the Moodle Files API EXCEPT when files will be renamed:
+- DAVRoot uses the Moodle Files API EXCEPT when folders/files will be renamed:
   using DAVRoot "should" be as safe as manipulating files using Moodle.
   Browsing is the safest option.
 - Microsoft Windows' WebDAV implementation requires some configurations:
@@ -51,9 +51,7 @@ KNOWN ISSUES
 - Pay attention when using different clients: Lock Manager should be enabled
 
 TODO
-- Directory recursive deletion
-- Directory recursive rename
 - Temporary file patterns configuration
-- Let required folder be configured
+- Let required folders be configured as part of the plugin settings
 - Log who change what
 - AOB: see the notes in the code
