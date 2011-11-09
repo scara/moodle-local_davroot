@@ -30,3 +30,4 @@ $plugin->version   = 2011110500;      // If version == 0 then module will not be
 $plugin->requires  = 2010080300;      // Requires this Moodle version
 $plugin->cron      = 0;               // Period for cron to check this module (secs)
 $plugin->component = 'local_davroot'; // To check on upgrade, that module sits in correct place
+$plugin->maturity  = MATURITY_RC;     // This version's maturity level
