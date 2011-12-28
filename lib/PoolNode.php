@@ -116,6 +116,12 @@ abstract class DAVRootPoolNode implements Sabre_DAV_IProperties
             throw new Sabre_DAV_Exception_Forbidden("You can't delete a virtual root file");
         }
 
+        // Load the configuration settings
+        $cfgDAVRoot = get_config('local_davroot');
+        if ($cfgDAVRoot->readonly) {
+            throw new Sabre_DAV_Exception_Forbidden('Read-only access configured');
+        }
+
         // Notes:
         // 1. stored_file::delete() always returns true
         // 2. stored_file::delete() will not delete the file from the file system
@@ -352,6 +358,12 @@ abstract class DAVRootPoolNode implements Sabre_DAV_IProperties
         // Prevent to rename a virtual root file
         if ($this->storedFile->is_directory() && ($this->storedFile->get_filepath() === '/')) {
             throw new Sabre_DAV_Exception_Forbidden("You can't rename a virtual root file");
+        }
+
+        // Load the configuration settings
+        $cfgDAVRoot = get_config('local_davroot');
+        if ($cfgDAVRoot->readonly) {
+            throw new Sabre_DAV_Exception_Forbidden('Read-only access configured');
         }
 
         $transaction = $DB->start_delegated_transaction();

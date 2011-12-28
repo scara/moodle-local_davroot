@@ -115,6 +115,18 @@ if ($hassiteconfig) { // needs this condition or there is error on login page
             0
         )
     );
+    // 9. Allow write methods
+    $settings->add(
+        new admin_setting_configcheckbox('local_davroot/readonly',
+            get_string('readonly', 'local_davroot'),
+            get_string(
+                'readonlydescr',
+                'local_davroot'
+            ),
+            1
+        )
+    );
+
     // Credits
     $settings->add(
         new admin_setting_heading(

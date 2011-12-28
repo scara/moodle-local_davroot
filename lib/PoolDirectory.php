@@ -47,6 +47,12 @@ class DAVRootPoolDirectory extends DAVRootPoolNode implements Sabre_DAV_ICollect
     {
         global $DB, $USER;
 
+        // Load the configuration settings
+        $cfgDAVRoot = get_config('local_davroot');
+        if ($cfgDAVRoot->readonly) {
+            throw new Sabre_DAV_Exception_Forbidden('Read-only access configured');
+        }
+
         if ($type = get_resource_type($data)) {
             try {
                 $contents = '';
@@ -111,6 +117,12 @@ class DAVRootPoolDirectory extends DAVRootPoolNode implements Sabre_DAV_ICollect
     public function createDirectory($name)
     {
         global $DB, $USER;
+
+        // Load the configuration settings
+        $cfgDAVRoot = get_config('local_davroot');
+        if ($cfgDAVRoot->readonly) {
+            throw new Sabre_DAV_Exception_Forbidden('Read-only access configured');
+        }
 
         $transaction = $DB->start_delegated_transaction();
         try {

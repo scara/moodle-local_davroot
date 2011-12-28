@@ -38,6 +38,8 @@ $string['pluginname'] = 'DAVRoot';
 $string['pluginnamedescr'] = 'Espone i files in Moodle attraverso WebDAV';
 $string['plugintempfilefilter'] = 'Plugin Temporary File Filter';
 $string['plugintempfilefilterdescr'] = 'Intercetta i pi&ugrave; comuni file temporanei conosciuti, creati dal Sistema Operativo e dagli Applicativi, e li posiziona in una cartella temporanea, {$a->tmpfilefilterfolder}';
+$string['readonly'] = 'Accesso in sola lettura';
+$string['readonlydescr'] = 'Non permettere altro che un accesso DAV in modalità <i>sola lettura</i> (l\'opzione più sicura)';
 // Slashes in a Virtual Node name (e.g. a Category) break browsing, replace them with safe characters
 $string['slashrep'] = '[barra]';
 $string['urlrewrite'] = 'Abilita l\'<i>URL rewrite</i>';

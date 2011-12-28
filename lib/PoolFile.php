@@ -38,6 +38,12 @@ class DAVRootPoolFile extends DAVRootPoolNode implements Sabre_DAV_IFile
     {
         global $DB, $USER;
 
+        // Load the configuration settings
+        $cfgDAVRoot = get_config('local_davroot');
+        if ($cfgDAVRoot->readonly) {
+            throw new Sabre_DAV_Exception_Forbidden('Read-only access configured');
+        }
+
         if ($type = get_resource_type($data)) {
             // Get the contents
             $contents = '';
