@@ -4,12 +4,12 @@ to map the Moodle Files API into DAV Resources and Collections.
 To install using git, type this command in the root of your Moodle
 installation:
     git clone git://github.com/scara/moodle-local_davroot.git ./
-Then add '/lib/sabredav' and '/local/davroot' to your git ignore.
+Then add '/local/davroot' to your git ignore or local exclude.
 
 Alternatively, download the tar.gz/zip from:
     https://github.com/scara/moodle-local_davroot/tarball/master
     https://github.com/scara/moodle-local_davroot/zipball/master
-and uncompress it into a temp folder. Then move the 'lib' and 'local'
+and uncompress it into a temp folder. Then move the 'local'
 folders into your Moodle installation folder.
 
 Log into your Moodle instance as admin: the installation process will start.

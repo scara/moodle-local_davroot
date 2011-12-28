@@ -35,7 +35,7 @@ require_once("$CFG->libdir/filebrowser/file_browser.php");
 // Load Moodle core libraries
 require_once("$CFG->dirroot/user/lib.php");
 // Load SabreDAV library
-require_once("$CFG->libdir/sabredav/lib/Sabre/autoload.php");
+require_once("$dirdavroot/lib/sabredav/lib/Sabre/autoload.php");
 // Load Plugin classes implementing the required SabreDAV interfaces
 require_once("$dirdavroot/lib/BrowseNode.php");
 require_once("$dirdavroot/lib/BrowseFile.php");
