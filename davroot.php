@@ -44,7 +44,14 @@ require_once("$dirdavroot/lib/PoolNode.php");
 require_once("$dirdavroot/lib/PoolFile.php");
 require_once("$dirdavroot/lib/PoolDirectory.php");
 
-// Load the configuration settings
+// New Moodle 2.2 parameters
+// 1. MDL-28701: $CFG->tempdir
+$tempDir = "$CFG->dataroot/temp";
+if (isset($CFG->tempdir)) {
+    $tempDir = $CFG->tempdir;
+}
+
+// Load the plugin configuration settings
 $cfgDAVRoot = get_config('local_davroot');
 if (!$cfgDAVRoot->allowconns) {
     redirect($CFG->wwwroot);
@@ -111,7 +118,7 @@ if (has_capability('local/davroot:canconnect', get_context_instance(CONTEXT_SYST
 
     // Support for LOCK and UNLOCK
     if ($cfgDAVRoot->lockmanager) {
-        $folder = "$CFG->dataroot/temp/davroot";
+        $folder = "$tempDir/davroot";
         $canAddLockMngr = true;
         if (!is_dir($folder)) {
             if (!mkdir($folder, $CFG->directorypermissions, true)) {
@@ -144,7 +151,7 @@ if (has_capability('local/davroot:canconnect', get_context_instance(CONTEXT_SYST
 
     // Temporary File Filter Plugin
     if ($cfgDAVRoot->plugintempfilefilter) {
-        $folder = "$CFG->dataroot/temp/davroot/tmp";
+        $folder = "$tempDir/davroot/tmp";
         $canAddTMPFilter = true;
         if (!is_dir($folder)) {
             if (!mkdir($folder, $CFG->directorypermissions, true)) {
