@@ -35,7 +35,9 @@ if ($hassiteconfig) { // needs this condition or there is error on login page
     );
     $settings->add(
         new admin_setting_heading(
-            'descr', get_string('pluginnamedescr', 'local_davroot'), ''
+            'descr',
+            get_string('pluginnamedescr', 'local_davroot'),
+            ''
         )
     );
 
