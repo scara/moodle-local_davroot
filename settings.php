@@ -129,15 +129,6 @@ if ($hassiteconfig) { // needs this condition or there is error on login page
         )
     );
 
-    // Credits
-    $settings->add(
-        new admin_setting_heading(
-            'credits',
-            get_string('credits', 'local_davroot'),
-            get_string('creditsdescr', 'local_davroot')
-        )
-    );
-
     // Finally, add these DAVRoot Plugin settings
     $ADMIN->add('localplugins', $settings);
 }

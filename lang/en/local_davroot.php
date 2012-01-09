@@ -26,8 +26,6 @@
 $string['davroot:canconnect'] = 'Allow the user to connect to the WebDAV server exposing Moodle Files';
 $string['allowconns'] = 'Allow connections';
 $string['allowconnsdescr'] = 'Allows permitted users to access Moodle Files through WebDAV';
-$string['credits'] = 'Credits';
-$string['creditsdescr'] = '<div style="text-align:center;">DAVRoot uses <a href="http://code.google.com/p/sabredav/" target="_blank">SabreDAV, a WebDAV framework for PHP</a>, to map the Moodle Files API into DAV Resources and Collections</div>';
 $string['lockmanager'] = 'Lock Manager';
 $string['lockmanagerdescr'] = 'Allows to handle all file-locks centrally in {$a->lockmngrfolder}';
 $string['pluginbrowser'] = 'Browser Plugin';
