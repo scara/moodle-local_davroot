@@ -16,6 +16,11 @@ Log into your Moodle instance as admin: the installation process will start.
 After you have installed this local plugin , you'll need to configure it under
 Site administration -> Plugins -> Local plugins -> DAVRoot in the 'Settings' block.
 
+LICENSE
+DAVRoot is licenced under the GNU GPL v3 or later.
+SabreDAV is licenced under the modified BSD, which is compatible with GPL:
+details in http://www.gnu.org/licenses/license-list.html#ModifiedBSD.
+
 SECURITY
 Requires the 'local/davroot:canconnect' capability at system context level.
 
