@@ -1,0 +1,7 @@
+Commits history available in: https://github.com/scara/moodle-local_davroot/commits/master
+
+1.0-rc3 (Build: 2012031000)
+    * Added: new SabreDAV version: 1.5.8-stable (2012-02-22)
+
+1.0-rc2 (Build: 2012011000)
+    * Fixed: be more transparent about the plugin licensing (thanks Anthony!)
