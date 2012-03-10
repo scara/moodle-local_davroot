@@ -5,7 +5,7 @@
  * 
  * @package Sabre
  * @subpackage CardDAV
- * @copyright Copyright (C) 2007-2011 Rooftop Solutions. All rights reserved.
+ * @copyright Copyright (C) 2007-2012 Rooftop Solutions. All rights reserved.
  * @author Evert Pot (http://www.rooftopsolutions.nl/) 
  * @license http://code.google.com/p/sabredav/wiki/License Modified BSD License
  */
@@ -65,11 +65,12 @@ class Sabre_CardDAV_Card extends Sabre_DAV_File implements Sabre_CardDAV_ICard, 
      */
     public function get() {
 
-        $cardData = $this->cardData['carddata'];
-        $s = fopen('php://temp','r+');
-        fwrite($s, $cardData);
-        rewind($s);
-        return $s;
+        // Pre-populating 'carddata' is optional. If we don't yet have it
+        // already, we fetch it from the backend.
+        if (!isset($this->cardData['carddata'])) {
+            $this->cardData = $this->carddavBackend->getCard($this->addressBookInfo['id'], $this->cardData['uri']);
+        }
+        return $this->cardData['carddata'];
 
     }
 
@@ -121,7 +122,11 @@ class Sabre_CardDAV_Card extends Sabre_DAV_File implements Sabre_CardDAV_ICard, 
      */
     public function getETag() {
 
-        return '"' . md5($this->cardData['carddata']) . '"';
+        if (isset($this->cardData['etag'])) {
+            return $this->cardData['etag'];
+        } else {
+            return '"' . md5($this->get()) . '"';
+        }
 
     }
 
@@ -143,7 +148,7 @@ class Sabre_CardDAV_Card extends Sabre_DAV_File implements Sabre_CardDAV_ICard, 
      */
     public function getSize() {
 
-        return strlen($this->cardData['carddata']);
+        return strlen($this->get());
 
     }
 

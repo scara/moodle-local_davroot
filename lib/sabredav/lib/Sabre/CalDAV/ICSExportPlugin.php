@@ -9,7 +9,7 @@
  * 
  * @package Sabre
  * @subpackage CalDAV
- * @copyright Copyright (C) 2007-2011 Rooftop Solutions. All rights reserved.
+ * @copyright Copyright (C) 2007-2012 Rooftop Solutions. All rights reserved.
  * @author Evert Pot (http://www.rooftopsolutions.nl/) 
  * @license http://code.google.com/p/sabredav/wiki/License Modified BSD License
  */
@@ -55,9 +55,19 @@ class Sabre_CalDAV_ICSExportPlugin extends Sabre_DAV_ServerPlugin {
 
         if (!($node instanceof Sabre_CalDAV_Calendar)) return;
 
+        // Checking ACL, if available.
+        if ($aclPlugin = $this->server->getPlugin('acl')) {
+            $aclPlugin->checkPrivileges($uri, '{DAV:}read');
+        }
+
         $this->server->httpResponse->setHeader('Content-Type','text/calendar');
         $this->server->httpResponse->sendStatus(200);
-        $this->server->httpResponse->sendBody($this->generateICS($this->server->tree->getChildren($uri)));
+
+        $nodes = $this->server->getPropertiesForPath($uri, array(
+            '{' . Sabre_CalDAV_Plugin::NS_CALDAV . '}calendar-data',
+        ),1);
+
+        $this->server->httpResponse->sendBody($this->generateICS($nodes));
 
         // Returning false to break the event chain
         return false;
@@ -84,7 +94,11 @@ class Sabre_CalDAV_ICSExportPlugin extends Sabre_DAV_ServerPlugin {
 
         foreach($nodes as $node) {
 
-            $nodeData = $node->get();
+            if (!isset($node[200]['{' . Sabre_CalDAV_Plugin::NS_CALDAV . '}calendar-data'])) {
+                continue;
+            }
+            $nodeData = $node[200]['{' . Sabre_CalDAV_Plugin::NS_CALDAV . '}calendar-data'];
+
             $nodeComp = Sabre_VObject_Reader::read($nodeData);
 
             foreach($nodeComp->children() as $child) {
@@ -105,12 +119,9 @@ class Sabre_CalDAV_ICSExportPlugin extends Sabre_DAV_ServerPlugin {
                         $collectedTimezones[] = $child->TZID;
                         break;
 
-
                 }
 
-
             }
-
 
         }
 

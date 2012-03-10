@@ -12,7 +12,7 @@
  * 
  * @package Sabre
  * @subpackage DAVACL
- * @copyright Copyright (C) 2007-2011 Rooftop Solutions. All rights reserved.
+ * @copyright Copyright (C) 2007-2012 Rooftop Solutions. All rights reserved.
  * @author Evert Pot (http://www.rooftopsolutions.nl/) 
  * @license http://code.google.com/p/sabredav/wiki/License Modified BSD License
  */
@@ -435,17 +435,19 @@ class Sabre_DAVACL_Plugin extends Sabre_DAV_ServerPlugin {
         $flat = $this->getFlatPrivilegeSet();
 
         $collected2 = array();
-        foreach($collected as $privilege) {
+        while(count($collected)) {
 
-            $collected2[] = $privilege['privilege'];
-            foreach($flat[$privilege['privilege']]['aggregates'] as $subPriv) {
-                if (!in_array($subPriv, $collected2)) 
-                    $collected2[] = $subPriv;
+            $current = array_pop($collected);
+            $collected2[] = $current['privilege'];
+
+            foreach($flat[$current['privilege']]['aggregates'] as $subPriv) {
+                $collected2[] = $subPriv;
+                $collected[] = $flat[$subPriv];
             }
 
         }
 
-        return $collected2;
+        return array_values(array_unique($collected2));
 
     }
 
