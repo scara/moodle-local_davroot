@@ -21,7 +21,7 @@
  * @package    local
  * @subpackage davroot
  * @author     Matteo Scaramuccia <moodle@matteoscaramuccia.com>
- * @copyright  Copyright (C) 2011 Matteo Scaramuccia
+ * @copyright  Copyright (C) 2011-2012 Matteo Scaramuccia
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
