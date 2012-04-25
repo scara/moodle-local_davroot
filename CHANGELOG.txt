@@ -1,5 +1,8 @@
 Commits history available in: https://github.com/scara/moodle-local_davroot/commits/master
 
+1.0-rc4 (Build: YYYYMMDDnn)
+    * Added: new SabreDAV version: 1.5.9-stable (2012-04-16)
+
 1.0-rc3 (Build: 2012031000)
     * Added: new SabreDAV version: 1.5.8-stable (2012-02-22)
 
