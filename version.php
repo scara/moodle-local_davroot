@@ -27,9 +27,9 @@
 
 defined('MOODLE_INTERNAL') || die;
 
-$plugin->version   = 2012042100;      // If version == 0 then module will not be installed
+$plugin->version   = 2012110300;      // If version == 0 then module will not be installed
 $plugin->requires  = 2010112400;      // Requires this Moodle version
 $plugin->cron      = 0;               // Period for cron to check this module (secs)
 $plugin->component = 'local_davroot'; // To check on upgrade, that module sits in correct place
 $plugin->maturity  = MATURITY_RC;     // This version's maturity level
-$plugin->release   = '1.0-rc4-2012042100'; // Human-friendly version name
+$plugin->release   = '1.0-rc5-2012110300'; // Human-friendly version name

@@ -3,7 +3,8 @@ to map the Moodle Files API into DAV Resources and Collections.
 
 To install using git, type this command in the root of your Moodle installation:
     git clone git://github.com/scara/moodle-local_davroot.git ./local/davroot
-Then add '/local/davroot' to your git ignore or local exclude.
+Then add '/local/davroot' to your git ignore or local exclude, e.g.:
+    echo '/local/davroot' >> .git/info/exclude
 
 Alternatively, download the tar.gz/zip from:
     https://github.com/scara/moodle-local_davroot/tarball/master
@@ -52,7 +53,7 @@ KNOWN ISSUES
   . cadaver, under CentOS 5.7
   . Cyberduck, under Windows Vista Home Premium SP2
   . Microsoft Windows' WebDAV implementation, Microsoft-WebDAV-MiniRedir/6.0.6002
-- Pay attention when using different clients: Lock Manager should be enabled
+- Pay attention when using concurrent clients: Lock Manager should be enabled
 
 TODO
 - Temporary file patterns configuration

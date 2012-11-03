@@ -26,6 +26,8 @@
 
 defined('MOODLE_INTERNAL') || die;
 
+require_once("$CFG->dirroot/local/davroot/locallib.php");
+
 if ($hassiteconfig) { // needs this condition or there is error on login page
 
     // DAVRoot plugin settings
@@ -67,12 +69,21 @@ if ($hassiteconfig) { // needs this condition or there is error on login page
             0
         )
     );
-    // 4. Enable Virtual Host mapping
-    $dirpath = "$CFG->dirroot/local/davroot/";
+    // 4. Enable Virtual Host mapping (required for Windows Explorer)
+    if (has_mdl35990()) {
+        // Warn for MDL-35990, otherwise browsing the virtual file system will fire HTTP 500 errors
+        $settings->add(
+            new admin_setting_heading(
+                'mdl35990',
+                get_string('warnmdl35990', 'local_davroot'),
+                get_string('warnmdl35990descr', 'local_davroot', array('filepath' => "$CFG->dirroot/repository/lib.php"))
+            )
+        );
+    }
     $settings->add(
         new admin_setting_configtext_with_advanced('local_davroot/vhostenabled',
             get_string('vhostenabled', 'local_davroot'),
-            get_string('vhostenableddescr', 'local_davroot', array('dirpath' => $dirpath)),
+            get_string('vhostenableddescr', 'local_davroot', array('dirpath' => "$CFG->dirroot/local/davroot/")),
             array('value' => '/', 'adv' => false),
             PARAM_PATH
         )

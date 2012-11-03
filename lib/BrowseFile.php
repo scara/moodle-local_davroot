@@ -43,8 +43,10 @@ class DAVRootBrowseFile extends DAVRootBrowseNode implements Sabre_DAV_IFile
                 // Update the instance
                 // TODO: code below not really useful, the object will be always recreated in real life
                 $params = $this->fileInfo->get_params();
+                // Context access backward compatibility (2.1-): http://docs.moodle.org/dev/Access_API
+                $context = class_exists('context', false) ? context::instance_by_id($params['contextid']) : get_context_instance_by_id($params['contextid']);
                 $this->fileInfo = $this->fileBrowser->get_file_info(
-                    get_context_instance_by_id($params['contextid']),
+                    $context,
                     $params['component'],
                     $params['filearea'],
                     $params['itemid'],

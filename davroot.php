@@ -25,17 +25,36 @@
  */
 
 $dirdavroot = dirname( __FILE__ );
-// Load Moodle configuration file
-require_once(dirname(dirname($dirdavroot)) . '/config.php');
+$dirroot = dirname(dirname($dirdavroot));
+
+// Hack the Moodle configuration: required in Moodle 2.3 and above.
+// More info in MDL-29866, commit f0f8f9a796daae3d5e9d30a5ebbd2ab75242e423
+$config_file_lines = file($dirroot . '/config.php');
+// Remove the PHP open tag
+$php_tag = array_shift($config_file_lines);
+// Force an advanced reverse proxy setting to allow Windows Explorer browsing
+$config_file = implode('', $config_file_lines);
+$config_file = str_replace(
+    'require_once(dirname(__FILE__)',
+    // Do not check if already configured: doing it twice gives no problems!
+    '$CFG->reverseproxy = true;'
+        // Fix the loading path
+        ."\n\nrequire_once('$dirroot'",
+    $config_file
+);
+// Load the Moodle hacked configuration file
+eval($config_file);
+
 // Load Moodle Files API libraries
 require_once("$CFG->libdir/filestorage/file_exceptions.php");
 require_once("$CFG->libdir/filestorage/file_storage.php");
 require_once("$CFG->libdir/filestorage/zip_packer.php");
 require_once("$CFG->libdir/filebrowser/file_browser.php");
-// Load Moodle core libraries
+// Load Moodle required core libraries
 require_once("$CFG->dirroot/user/lib.php");
 // Load SabreDAV library
 require_once("$dirdavroot/lib/sabredav/lib/Sabre/autoload.php");
+
 // Load Plugin classes implementing the required SabreDAV interfaces
 require_once("$dirdavroot/lib/BrowseNode.php");
 require_once("$dirdavroot/lib/BrowseFile.php");
@@ -44,8 +63,8 @@ require_once("$dirdavroot/lib/PoolNode.php");
 require_once("$dirdavroot/lib/PoolFile.php");
 require_once("$dirdavroot/lib/PoolDirectory.php");
 
-// New Moodle 2.2 parameters
-// 1. MDL-28701: $CFG->tempdir
+// Moodle 2.2+ parameters
+// MDL-28701: $CFG->tempdir
 $tempDir = "$CFG->dataroot/temp";
 if (isset($CFG->tempdir)) {
     $tempDir = $CFG->tempdir;
@@ -64,13 +83,19 @@ if (!empty($cfgDAVRoot->allowediplist)) {
     }
 }
 
+// Context access backward compatibility (2.1-): http://docs.moodle.org/dev/Access_API
+$context = class_exists('context_system', false) ?
+            context_system::instance() :
+            get_context_instance(CONTEXT_SYSTEM);
+
 // Set up the HTTP BASIC Authentication
 $user = false;
 $site = get_site();
 $realm = $site->fullname;
 $auth = new Sabre_HTTP_BasicAuth();
-// TODO: encode the fullname, at least remove double quotes
+// TODO: encode the fullname?
 $auth->setRealm(
+    // At least remove double quotes
     implode('', explode('"', $realm))
 );
 $result = $auth->getUserPass();
@@ -83,12 +108,17 @@ if (!$result) {
     $username = $result[0];
     $password = $result[1];
 
-    // Remove the Windows Domain, if any
+    // Remove the Windows Domain, if any, considering the canonical NTLM format configuration:
+    //   DOMAIN\username.
+    // See also MDL-31968 for further notes about other NTLM authentication configurations
     $username = array_pop(explode('\\', $username));
 
     // Note: skip Moodle authentication if already logged in
     $alreadyLoggedIn = (isloggedin() && ($USER->username === $username));
     if (!$alreadyLoggedIn) {
+        // Set context: format_string() in profile user fields ('menu'), triggered by authenticate_user_login()
+        $PAGE->set_context($context);
+
         // Try to authenticate against Moodle
         if (!$user = authenticate_user_login($username, $password)) {
             // Authentication required
@@ -102,7 +132,7 @@ if (!$result) {
 }
 
 // Can the user connect to the WebDAV server?
-if (has_capability('local/davroot:canconnect', get_context_instance(CONTEXT_SYSTEM))) {
+if (has_capability('local/davroot:canconnect', $context)) {
     // Start the Virtual File System on top of the Moodle hierarchy
     $server = new Sabre_DAV_Server(
         new DAVRootBrowseDirectory()

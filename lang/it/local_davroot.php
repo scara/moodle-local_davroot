@@ -44,3 +44,5 @@ $string['urlrewrite'] = 'Abilita l\'<i>URL rewrite</i>';
 $string['urlrewritedescr'] = 'Permette alle URL DAV di essere scritte senza la pagina PHP finale: {$a->wwwpath}';
 $string['vhostenabled'] = 'Abilita il <i>Virtual Host</i>';
 $string['vhostenableddescr'] = 'Permette a WebDAV di essere esposto alla radice di un <i>Virtual Host</i> opportunamente configurato per mappare {$a->dirpath}';
+$string['warnmdl35990'] = '<span style="color: red;"><a href="http://tracker.moodle.org/browse/MDL-35990" target="_blank">MDL-35990</a> impedisce a DAVRoot di funzionare con la configurazione <i>Virtual Host</i>!</span>';
+$string['warnmdl35990descr'] = '<span style="color: red;">Aspettati errori di tipo HTTP Status 500 fino a quando non avrai rimosso la riga "<span style="font-family: courier new, courier, monospace; color: black;">require_once(dirname(dirname(__FILE__)) . \'/config.php\');</span>" dal file <span style="font-family: courier new, courier, monospace; color: black;">{$a->filepath}</span></span>';
