@@ -1,6 +1,10 @@
 Commits history available in: https://github.com/scara/moodle-local_davroot/commits/master
 
-1.0-rc4 (Build: YYYYMMDDnn)
+1.0-rc5 (Build: 2012110300)
+    * Added: support for Moodle 2.3 and above
+    * Added: implicit support to AMOS (MDLSITE-1836)
+
+1.0-rc4 (Build: n/a)
     * Added: new SabreDAV version: 1.5.9-stable (2012-04-16)
 
 1.0-rc3 (Build: 2012031000)
